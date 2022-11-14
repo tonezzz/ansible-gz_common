@@ -1,0 +1,18 @@
+---
+
+- name: del_files
+  block:
+  - name: Find files
+    loop: "{{opts_del_files.del_items}}"
+    loop_control: {loop_var: del_file_items}
+    ansible.builtin.find:
+      paths: "{{del_file_items.paths}}"
+      patterns: "{{del_file_items.patterns | default(omit) }}"
+    register: del_files_rs
+  #- debug: var=del_files_rs
+  - name: Delete files
+    loop: "{{del_files_rs.results[0].files}}"
+    loop_control: {loop_var: del_files_item}
+    file:
+      path: "{{del_files_item.path}}"
+      state: absent

@@ -1,0 +1,13 @@
+---
+
+- name: Mounts v2
+  when: opts_mounts_v2 is defined
+  loop: "{{opts_mounts_v2}}"
+  loop_control: {loop_var: mount_item}
+  #debug: var=mount_item
+  mount:
+    src: "{{ mount_item.src | default(omit) }}"
+    path: "{{ mount_item.path | default(omit) }}"
+    state: "{{ mount_item.state | default(omit) }}"
+    fstype: "{{ mount_item.fstype | default(omit) }}"
+    opts: "{{ mount_item.opts | default(omit) }}"

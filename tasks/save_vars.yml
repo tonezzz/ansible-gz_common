@@ -1,0 +1,29 @@
+---
+
+######## opts_bak
+- name: Saving variables
+  vars:
+    file: "{{opts_vars.file_path}}"
+  block:
+  - name: "Saving ansible_facts"
+    delegate_to: localhost
+    vars:
+      data:
+        playbooks:
+          ansible_play_name:         "{{ansible_play_name}}"
+          playbook_dir:              "{{playbook_dir}}"
+          ansible_search_path:       "{{ansible_search_path}}"
+          role_path:                 "{{role_path                   |default('n/a') }}"
+          ansible_play_role_names:   "{{ansible_play_role_names     |default('n/a') }}"
+          ansible_parent_role_names: "{{ansible_parent_role_names   |default('n/a') }}"
+          ansible_parent_role_paths: "{{ansible_parent_role_paths   |default('n/a') }}"
+          env: "{{ansible_facts.env}}"
+          #absoluteName: "{{ (lookup('file', '/proc/self/cmdline') | regex_replace('\u0000',' ')).split() | select('match','^.*[.]ya?ml$') | list | first }}"
+          #baseName: "{{ playbook_absoluteName | basename }}"
+        hostvars: "{{hostvars[inventory_hostname]}}"
+        ansible_facts: "{{ansible_facts}}"
+        ansible_local: "{{ansible_local}}"
+    copy:
+      dest: "{{file}}"
+      content: "{{data}}"
+  - debug: var=file

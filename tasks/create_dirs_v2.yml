@@ -1,0 +1,12 @@
+---
+
+- name: Create dirs v2
+  loop: "{{opts_create_dirs_v2}}"
+  loop_control: {loop_var: dir_item}
+  ansible.builtin.file:
+    path: "{{dir_item.path}}"
+    state: directory
+    owner: "{{dir_item.owner | default(omit) }}"
+    group: "{{dir_item.group | default(omit) }}"
+    mode: "{{dir_item.mode | default(omit) }}"
+    recurse: "{{ dir_item.opts.recurse | default(omit) }}"

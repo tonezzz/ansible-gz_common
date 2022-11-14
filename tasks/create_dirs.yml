@@ -1,0 +1,22 @@
+---
+
+#Example
+#    vars:
+#      args:
+#        dirs:
+#        - /mnt/c/Dropbox/www_swl/{{site_item.domain}}
+
+#- name: Info
+#  vars:
+#    playbook_absoluteName: "{{ (lookup('file', '/proc/self/cmdline') | regex_replace('\u0000',' ')).split() | select('match','^.*[.]ya?ml$') | list | first }}"
+#    playbook_baseName: "{{ playbook_absoluteName | basename }}"
+#  debug: var=playbook_absoluteName
+
+- name: Create dirs
+  when: args.dirs is defined
+  loop: "{{args.dirs}}"
+  loop_control: {loop_var: dirx}
+  #debug: var=args
+  ansible.builtin.file:
+    path: "{{dirx}}"
+    state: directory

@@ -1,0 +1,8 @@
+---
+
+- name: Services state
+  loop: "{{opts_services.service_items}}"
+  ignore_errors: "{{opts_services.ignore_errors | default(omit) }}"
+  ansible.builtin.service:
+    name: "{{item}}"
+    state: "{{opts_services.state}}"

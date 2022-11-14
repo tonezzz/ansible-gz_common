@@ -1,0 +1,5 @@
+---
+
+- {name: Create dir v2  ,when: (opts_common.create_dirs_v2 is defined)  ,vars: {opts_create_dirs_v2: "{{opts_common.create_dirs_v2}}" }  ,include_tasks: create_dirs_v2.yml }
+- {name: Mounts v2      ,when: (opts_common.mounts_v2 is defined)       ,vars: {opts_mounts_v2:      "{{opts_common.mounts_v2}}" }       ,include_tasks: mounts_v2.yml }
+- {name: Services       ,when: (opts_common.services is defined)        ,vars: {opts_services:       "{{opts_common.services}}" }        ,include_tasks: services.yml }

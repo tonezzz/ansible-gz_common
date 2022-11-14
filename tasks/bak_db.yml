@@ -1,0 +1,131 @@
+---
+
+- debug: var=opts_bak
+
+- name: Save vars
+  when: opts_bak.do.save_hostvars|default(false)
+  vars:
+    opts_vars:
+      file_path: "{{opts_bak.download_dir}}hostvars_{{inventory_hostname}}_{{ansible_date_time.iso8601 | replace(':','') }}.json"
+  include_tasks: save_vars.yml
+
+######## db_bak
+- name: Host preparation
+  when: opts_bak.do.apt|default(false)
+  block:
+  - name: apt install
+    apt:
+      pkg:
+      - python3-pip
+      - wget
+      #https://tecadmin.net/how-to-install-python-3-9-on-debian-9/
+      - build-essential
+      - libreadline-gplv2-dev
+      - libncursesw5-dev
+      - libssl-dev
+      - libsqlite3-dev
+      - tk-dev
+      - libgdbm-dev
+      - libc6-dev
+      - libbz2-dev
+      - libffi-dev
+      - zlib1g-dev
+  - name: pip install
+    loop:
+    - pymysql
+    - jmespath  #json_query
+    pip:
+      name: "{{item}}"
+
+########
+- name: Python installing
+  when: opts_bak.do.install_python|default(false)
+  vars:
+    src_file: https://www.python.org/ftp/python/3.9.15/Python-3.9.15.tgz
+  block:
+  - name: Download and install
+    command: |
+      chdir=/tmp
+      wget -c "{{src_file}}" -O - | tar -xz
+      cd $("{{src_file}}"##*/)
+    args:
+      warn: false
+    register: outout
+  #- debug: var=output
+  #- meta: end_play
+
+########
+- name: Pre-clean
+  when: opts_bak.do.pre_clean|default(false)
+  block:
+  - name: "Pre clean {{opts_bak.tmp_dir}}"
+    ansible.builtin.file:
+      path: "{{opts_bak.tmp_dir}}"
+      state: absent
+
+########
+- name: Backup
+  when: opts_bak.do.backup|default(false)
+  block:
+  - name: "Stat {{opts_bak.tmp_dir}}"
+    ansible.builtin.stat:
+      path: "{{opts_bak.tmp_dir}}"
+    register: output
+  - name: Fail if {{opts_bak.tmp_dir}} exists.
+    when: output.stat.exists|default(false)
+    fail:
+      msg: Found {{opts_bak.tmp_dir}}. perhaps another backup is running.  Please re-run with do.del_tmp = yes
+
+  - name: tmp_dir creation
+    ansible.builtin.file:
+      path: "{{opts_bak.tmp_dir}}"
+      state: directory
+  
+  - name: db listing
+    shell: 'mysql -e "show databases;" '
+    register: output
+  - name: db list extracting
+    set_fact:
+      db_list: "{{output.stdout_lines|difference(['Database'])}}"
+  - debug: var=db_list
+  
+  - name: backup databases
+    mysql_db:
+      state: dump
+      name: "{{ item }}"
+      target: "{{opts_bak.tmp_dir}}{{item}}.{{opts_bak.bak_ext|default('gz') }}"
+      login_unix_socket: "{{opts_bak.login_unix_socket}}"
+      login_user: "{{opts_bak.login_user}}"
+      #login_password: "{{ vault_root_passwd }}"
+    with_items: "{{ db_list | difference(opts_bak.exclude_db|default([])) }}"
+
+########
+- name: Download
+  when: opts_bak.do.download|default(false)
+  vars:
+    sync_path: "{{opts_bak.download_dir}}{{opts_bak.download_prefix|default('bak_db')}}_{{inventory_hostname}}_{{ansible_date_time.iso8601 | replace(':','') }}/"
+  block:
+  - debug: var=[sync_path,opts_bak.tmp_dir]
+  - name: download with fetch
+    block:
+    - name: get file_list
+      find:
+        path: "{{opts_bak.tmp_dir}}"
+        patterns: '*'
+      register: output
+    #- debug: var=output.files
+    - name: fetch files
+      loop: "{{output.files}}"
+      ansible.builtin.fetch:
+        src: "{{item.path}}"
+        dest: "{{sync_path}}"
+        flat: yes
+        
+########
+- name: Clean up
+  when: opts_bak.do.clean_up|default(false)
+  block:
+  - name: "{{opts_bak.tmp_dir}} clean up"
+    ansible.builtin.file:
+      path: "{{opts_bak.tmp_dir}}"
+      state: absent

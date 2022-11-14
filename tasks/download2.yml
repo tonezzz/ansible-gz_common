@@ -1,0 +1,54 @@
+---
+
+########
+- name: Download
+  block:
+  - debug: var=opts_download
+  - name: get file_list
+    find:
+      path: "{{opts_download.src_path}}"
+      patterns: "{{opts_download.patterns}}"
+      file_type: "{{opts_download.file_type | default(omit)}}"
+    register: output
+
+  - name: File download
+    loop: "{{ output|json_query('files[?!isdir].{path: path}') }}"
+    #ansible.builtin.fetch:
+    #  src: "{{item.path}}"
+    #  dest: "{{opts_download.dst_path}}"
+    #  flat: yes
+    vars:
+      path_name: "{{ item.path|dirname|basename + '/' if opts_download.use_sub_dirs|default(false) else '' }}"
+    ansible.builtin.fetch:
+      src: "{{item.path}}"
+      dest: "{{opts_download.dst_path}}{{path_name}}"
+      flat: yes
+    #debug: var=use_sub_dirs,path_name
+  #- meta: end_play
+   
+  - name: sub_dir download
+    vars:
+      file_all: "{{ output|json_query('files[*].{path: path ,ctime: ctime}') | list }}"
+      filter_latest: "[-{{ opts_download.download_count|default(1) }}:]"
+      filter_oldest: "[:{{ opts_download.download_count|default(1) }}]"
+      opts:
+        file_latest: "{{ file_all|json_query(filter_latest) | list }}"
+        file_oldest: "{{ file_all|json_query(filter_oldest) | list }}"
+      download_dirs: "{{ opts['file_' + opts_download.mode|default('all')] }}"
+    loop: "{{download_dirs}}"
+    find:
+      path: "{{item.path}}"
+      patterns: "*"
+      file_type: file
+    register: output2
+  - name: File download
+    loop: "{{ output2|json_query('results[*].files[*].{path: path}') | flatten }}"
+    vars:
+      path_name: "{{ item.path|dirname|basename + '/' if outs_download.use_sub_dirs|default(false) else '' }}"
+    ansible.builtin.fetch:
+      src: "{{item.path}}"
+      dest: "{{opts_download.dst_path}}{{path_name}}"
+      flat: yes
+    #debug: var=[path_name,src,dest]
+    
+

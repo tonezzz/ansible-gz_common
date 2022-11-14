@@ -1,0 +1,23 @@
+---
+
+########
+- name: Download
+  block:
+  - debug: var=opts_download
+  - name: download with fetch
+    block:
+    - name: get file_list
+      find:
+        path: "{{opts_download.src_path}}"
+        patterns: "{{opts_download.patterns}}"
+        file_type: "{{opts_download.file_type | default(omit)}}"
+      register: output
+    - debug: var=output.files
+    - name: fetch files
+      tags: xnever
+      loop: "{{output.files}}"
+      ansible.builtin.fetch:
+        src: "{{item.path}}"
+        dest: "{{opts_download.dst_path}}"
+        flat: yes
+
