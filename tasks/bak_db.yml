@@ -6,7 +6,7 @@
   when: opts_bak.do.save_hostvars|default(false)
   vars:
     opts_vars:
-      file_path: "{{opts_bak.download_dir}}hostvars_{{inventory_hostname}}_{{ansible_date_time.iso8601 | replace(':','') }}.json"
+      file_path: "{{opts_bak.hostvars_path}}hostvars_{{inventory_hostname}}_{{ansible_date_time.iso8601 | replace(':','') }}.json"
   include_tasks: save_vars.yml
 
 ######## db_bak
