@@ -1,0 +1,15 @@
+---
+
+- name: Group
+  ansible.builtin.group:
+    name: "{{opts_user.group}}"
+
+- name: User
+  ansible.builtin.user:
+    name:         "{{opts_user.name}}"
+    password:     "{{opts_user.password}}"
+    group:        "{{opts_user.group}}"
+    groups:       ["www-data"]
+    create_home:  "{{opts_user.create_home  | default(omit)}}"
+    shell:        "{{opts_user.shell        | default(omit)}}"
+    append:       "{{opts_user.append       | default(omit)}}"
